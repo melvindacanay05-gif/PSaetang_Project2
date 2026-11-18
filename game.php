@@ -6,9 +6,10 @@ if (empty($_SESSION['logged_in'])) {
     exit;
 }
 
-if (!isset($_SESSION['placeholders']) || !isset($_SESSION['total'])){
+if (!isset($_SESSION['placeholders']) || !isset($_SESSION['total']) || !isset($_SESSION['strikes'])){
     $_SESSION['placeholders'] = [1,2,3,4,5];
     $_SESSION['total'] = 0;
+    $_SESSION['strikes'] = 0;
 }
 
 $answer   = '';
@@ -74,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action !== null){
 
         if ($action === 'reset') {
-            unset($_SESSION['placeholders'], $_SESSION['total']);
+            unset($_SESSION['placeholders'], $_SESSION['total'], $_SESSION['strikes']);
             header("Location: " . $_SERVER['PHP_SELF']);
             exit;
         }
@@ -95,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['total'] += $points;
         }
     }
-    if ($_SESSION['total'] == 100){
+    if ($_SESSION['total'] == 100 || $_SESSION['strikes'] >= 2){
         
         $_SESSION['total_points'] = ($_SESSION['total_points'] ?? 0) + $_SESSION['total'];
 
@@ -115,6 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
 
         $_SESSION['total'] = 0;
+        $_SESSION['strikes'] = 0;
         $_SESSION['placeholders'] = [1,2,3,4,5];
 
         header('Location: result.php');
@@ -127,8 +129,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $feedback = 'Survey says... YES! +' . ($_SESSION['total'] - $scoreBefore) . ' points';
             $feedbackType = 'good';
         } else {
-            $feedback = 'Survey says... nope, not on the board.';
-            $feedbackType = 'bad';
+
+        $_SESSION['strikes']++;
+
+        $feedback = 'Survey says... nope, not on the board.';
+        $feedbackType = 'bad';
+
+
         }
     }
 }
@@ -157,6 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             print 'total: ' . (int) $_SESSION['total'] . '<br>';
         ?>
+        <h2>Strikes: <?= (int) $_SESSION['strikes'] ?> / 3</h2>
         <h1><?= htmlspecialchars($questions[0]["question"]) ?></h1>
 
         <?php if ($feedback !== ''): ?>
