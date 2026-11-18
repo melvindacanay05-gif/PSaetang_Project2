@@ -11,6 +11,33 @@ $totalRounds = 3;
 $maxStrikes = 3;
 $maxHints = 1;
 
+const ACCOUNTS_FILE = __DIR__ . '/data/accounts.txt';
+
+function addToTotalScore(string $username, int $points): int
+{
+    $lines = file(ACCOUNTS_FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) {
+        return $points;
+    }
+
+    $total = $points;
+    $found = false;
+    foreach ($lines as $i => $line) {
+        $account = json_decode($line, true);
+        if (strcasecmp($account['username'] ?? '', $username) === 0) {
+            $total = ($account['total_score'] ?? 0) + $points;
+            $account['total_score'] = $total;
+            $lines[$i] = json_encode($account);
+            $found = true;
+        }
+    }
+
+    if ($found) {
+        file_put_contents(ACCOUNTS_FILE, implode(PHP_EOL, $lines) . PHP_EOL, LOCK_EX);
+    }
+    return $total;
+}
+
 if (count($questions) < $totalRounds) {
     exit('questions.php needs at least ' . $totalRounds . ' questions.');
 }
@@ -134,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($_SESSION['round'] >= $totalRounds) {
             // last round: save the game and show results
-            $_SESSION['total_points'] = ($_SESSION['total_points'] ?? 0) + $_SESSION['banked'];
+            $_SESSION['total_points'] = addToTotalScore($_SESSION['user'] ?? 'guest', $_SESSION['banked']);
 
             $_SESSION['scores'][] = [
                 'user'  => $_SESSION['user'] ?? 'guest',

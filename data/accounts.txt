@@ -1,0 +1,1 @@
+{"username":"melvin","password":"$2y$12$yFtRpLrWee5S2ZRt45B8UudVVjLjNbOvVOHqHamzAfYnoZY6\/ijYC","created":"2026-11-18T23:41:22+00:00","total_score":88}
