@@ -1,12 +1,20 @@
 <?php
 session_start();
 
+if (empty($_SESSION['logged_in'])) {
+    header('Location: login.php');
+    exit;
+}
+
 if (!isset($_SESSION['placeholders']) || !isset($_SESSION['total'])){
     $_SESSION['placeholders'] = [1,2,3,4,5];
     $_SESSION['total'] = 0;
 }
 
-$answer = '';
+$answer   = '';
+$feedback = '';
+$feedbackType = '';
+$scoreBefore = $_SESSION['total'];
 
 $questions = [
 
@@ -38,15 +46,35 @@ $questions = [
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    if (isset($_POST['answer'])){
-        $answer = $_POST['answer'];
+    $action = filter_input(INPUT_POST, 'action', FILTER_UNSAFE_RAW);
+    if ($action !== null && $action !== 'reset') {
+        $action = null;
     }
 
-    if (isset($_POST['action'])){
-        $action = $_POST['action'];
+    $rawAnswer = filter_input(INPUT_POST, 'answer', FILTER_UNSAFE_RAW);
+    if ($rawAnswer !== null && $action === null) {
+        $answer = strtolower(preg_replace('/\s+/', ' ', trim((string) $rawAnswer)));
+
+        if ($answer === '') {
+            $feedback = 'Type an answer first!';
+        } elseif (strlen($answer) > 40) {
+            $feedback = 'That answer is too long (40 characters max).';
+        } elseif (!preg_match("/^[a-z0-9 '\-]+$/", $answer)) {
+            $feedback = 'Answers can only have letters, numbers, spaces, hyphens, and apostrophes.';
+        } elseif (in_array($answer, $_SESSION['placeholders'], true)) {
+            $feedback = 'That one is already on the board!';
+        }
+
+        if ($feedback !== '') {
+            $answer = '';
+            $feedbackType = 'bad';
+        }
+    }
+
+    if ($action !== null){
 
         if ($action === 'reset') {
-            session_destroy();
+            unset($_SESSION['placeholders'], $_SESSION['total']);
             header("Location: " . $_SERVER['PHP_SELF']);
             exit;
         }
@@ -69,14 +97,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($_SESSION['total'] == 100){
         
-        $_SESSION['total_points'] += $_SESSION['total'];
+        $_SESSION['total_points'] = ($_SESSION['total_points'] ?? 0) + $_SESSION['total'];
+
+        $_SESSION['scores'][] = [
+            'user'  => $_SESSION['user'] ?? 'guest',
+            'score' => $_SESSION['total_points'],
+            'time'  => time(),
+        ];
+
+        $_SESSION['last_result'] = [
+            'won'          => true,
+            'question'     => $question['question'],
+            'answers'      => $question['answers'],
+            'found'        => array_values(array_filter($_SESSION['placeholders'], 'is_string')),
+            'round_score'  => $_SESSION['total'],
+            'total_points' => $_SESSION['total_points'],
+        ];
+
         $_SESSION['total'] = 0;
         $_SESSION['placeholders'] = [1,2,3,4,5];
 
-        print "Current total: " .  $_SESSION['total_points'] . "<br>";
-        exit('<a href="index.php">Good job! Go back</a>');
+        header('Location: result.php');
+        exit;
     }
 }
+
+    if ($answer !== '' && $feedback === '') {
+        if ($_SESSION['total'] > $scoreBefore) {
+            $feedback = 'Survey says... YES! +' . ($_SESSION['total'] - $scoreBefore) . ' points';
+            $feedbackType = 'good';
+        } else {
+            $feedback = 'Survey says... nope, not on the board.';
+            $feedbackType = 'bad';
+        }
+    }
 }
 
 ?>
@@ -93,21 +147,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="login.php">login</a>
             <a href="register.php">register</a>
             <a href="game.php">game</a>
+            <a href="leaderboard.php">leaderboard</a>
+            <a href="logout.php">logout</a>
         </nav>
         <?php
             foreach ($_SESSION['placeholders'] as $placeholder){
-                print $placeholder . '<br>';
+                print htmlspecialchars((string) $placeholder) . '<br>';
             }
 
-
-
-            print 'total: ' . $_SESSION['total'] . '<br>';
-            // print 'highscore: ' . $_SESSION['highscore'];
+            print 'total: ' . (int) $_SESSION['total'] . '<br>';
         ?>
-        <h1><?=$questions[0]["question"]?></h1>
+        <h1><?= htmlspecialchars($questions[0]["question"]) ?></h1>
+
+        <?php if ($feedback !== ''): ?>
+            <p class="feedback <?= $feedbackType ?>" role="status"><?= htmlspecialchars($feedback) ?></p>
+        <?php endif; ?>
 
         <form method="POST" action="game.php">
-            <input type="text" name="answer">
+            <input type="text" name="answer" required maxlength="40" autocomplete="off" autofocus>
             <button type="submit">submit</button>
         </form>
         <form action="game.php" method="POST">
