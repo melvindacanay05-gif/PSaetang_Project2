@@ -9,18 +9,21 @@ if (empty($_SESSION['logged_in'])) {
 $questions = require __DIR__ . '/questions.php';
 $totalRounds = 3;
 $maxStrikes = 3;
+$maxHints = 1;
 
 if (count($questions) < $totalRounds) {
     exit('questions.php needs at least ' . $totalRounds . ' questions.');
 }
 
-if (!isset($_SESSION['placeholders'], $_SESSION['total'], $_SESSION['strikes'], $_SESSION['round'], $_SESSION['banked'], $_SESSION['question_ids'], $_SESSION['rounds'])) {
+if (!isset($_SESSION['placeholders'], $_SESSION['total'], $_SESSION['strikes'], $_SESSION['round'], $_SESSION['banked'], $_SESSION['question_ids'], $_SESSION['rounds'], $_SESSION['hints'], $_SESSION['hint_for'])) {
     $_SESSION['placeholders'] = [1,2,3,4,5];
     $_SESSION['total'] = 0;
     $_SESSION['strikes'] = 0;
     $_SESSION['round'] = 1;
     $_SESSION['banked'] = 0;
     $_SESSION['rounds'] = [];
+    $_SESSION['hints'] = 0;
+    $_SESSION['hint_for'] = '';
 
     // random question selection: a different random question for each round
     $ids = array_rand($questions, $totalRounds);
@@ -37,8 +40,26 @@ $current = $questions[$_SESSION['question_ids'][$_SESSION['round'] - 1]];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $action = filter_input(INPUT_POST, 'action', FILTER_UNSAFE_RAW);
-    if ($action !== null && $action !== 'reset') {
+    if ($action !== null && !in_array($action, ['reset', 'hint'], true)) {
         $action = null;
+    }
+    if ($action === 'hint') {
+        if ($_SESSION['hints'] >= $maxHints) {
+            $feedback = 'No hints left this round.';
+            $feedbackType = 'bad';
+        } else {
+            $i = 0;
+            foreach ($current['answers'] as $ans => $points) {
+                $i++;
+                if ($_SESSION['placeholders'][$i - 1] === $i) {   // first answer not found yet
+                    $_SESSION['hints']++;
+                    $_SESSION['hint_for'] = (string) $ans;
+                    $feedback = 'Hint added below.';
+                    $feedbackType = 'good';
+                    break;
+                }
+            }
+        }
     }
 
     $rawAnswer = filter_input(INPUT_POST, 'answer', FILTER_UNSAFE_RAW);
@@ -129,7 +150,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             unset(
                 $_SESSION['placeholders'], $_SESSION['total'], $_SESSION['strikes'],
-                $_SESSION['round'], $_SESSION['banked'], $_SESSION['question_ids'], $_SESSION['rounds']
+                $_SESSION['round'], $_SESSION['banked'], $_SESSION['question_ids'], $_SESSION['rounds'],
+                $_SESSION['hints'], $_SESSION['hint_for']
             );
             header('Location: result.php');
             exit;
@@ -144,6 +166,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['placeholders'] = [1,2,3,4,5];
         $_SESSION['total'] = 0;
         $_SESSION['strikes'] = 0;
+        $_SESSION['hints'] = 0;
+        $_SESSION['hint_for'] = '';
         header('Location: game.php');
         exit;
     }
@@ -173,6 +197,12 @@ if (isset($_SESSION['flash'])) {
             <a href="logout.php">logout</a>
         </nav>
         <h3>Round <?= (int) $_SESSION['round'] ?> of <?= $totalRounds ?></h3>
+        <?php if ($feedback !== ''): ?>
+            <p class="feedback <?= htmlspecialchars($feedbackType) ?>" role="status"></p>
+        <?php endif; ?>
+        <?php if ($_SESSION['hint_for'] !== '' && !in_array($_SESSION['hint_for'], $_SESSION['placeholders'], true)): ?>
+            <p>Hint: <?= htmlspecialchars(strtoupper($_SESSION['hint_for'][0]) . preg_replace('/[^ ]/', '_', substr($_SESSION['hint_for'], 1))) ?></p>
+        <?php endif; ?>
         <?php
             foreach ($_SESSION['placeholders'] as $placeholder){
                 print htmlspecialchars((string) $placeholder) . '<br>';
@@ -184,9 +214,6 @@ if (isset($_SESSION['flash'])) {
         <h2>Strikes: <?= (int) $_SESSION['strikes'] ?> / <?= $maxStrikes ?></h2>
         <h1><?= htmlspecialchars($current['question']) ?></h1>
 
-        <?php if ($feedback !== ''): ?>
-            <p class="feedback <?= htmlspecialchars($feedbackType) ?>" role="status"><?= htmlspecialchars($feedback) ?></p>
-        <?php endif; ?>
 
         <form method="POST" action="game.php">
             <input type="text" name="answer" required maxlength="40" autocomplete="off" autofocus>
@@ -195,6 +222,12 @@ if (isset($_SESSION['flash'])) {
         <form action="game.php" method="POST">
             <input type="hidden" name="action" value="reset">
             <button type="submit">reset</button>
+        </form>
+                <form action="game.php" method="POST">
+            <input type="hidden" name="action" value="hint">
+            <button type="submit" <?= $_SESSION['hints'] >= $maxHints ? 'disabled' : '' ?>>
+                hint (<?= $maxHints - $_SESSION['hints'] ?> left)
+            </button>
         </form>
     </body>
 </html>
