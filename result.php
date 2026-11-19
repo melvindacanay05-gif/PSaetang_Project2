@@ -46,17 +46,7 @@ $rank = ($rank === false) ? null : $rank + 1;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Results | Family Feud: Survey Showdown</title>
-    <style>
-        .board { list-style: none; padding: 0; max-width: 420px; }
-        .board li { display: flex; justify-content: space-between; padding: 0.5rem 0.8rem; margin-bottom: 0.3rem; border: 1px solid #ccc; border-radius: 6px; }
-        .board li.missed { color: #888; font-style: italic; }
-        .stats { display: flex; gap: 1.5rem; flex-wrap: wrap; margin: 1rem 0; }
-        .stat { border: 1px solid #ccc; border-radius: 8px; padding: 0.8rem 1.2rem; text-align: center; min-width: 110px; }
-        .stat strong { display: block; font-size: 1.6rem; }
-        .round { margin-top: 1.5rem; }
-        .round-meta { color: #555; margin: 0.2rem 0 0.8rem; }
-        .actions { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.5rem; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
