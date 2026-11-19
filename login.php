@@ -74,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <a href="login.php">login</a>
     <a href="register.php">register</a>
     <a href="leaderboard.php">leaderboard</a>
+    <a href="team.html">team</a>
 </nav>
 
 <main class="auth-page">

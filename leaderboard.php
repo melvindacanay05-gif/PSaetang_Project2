@@ -59,10 +59,10 @@ foreach ($best as $i => $row) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leaderboard | Family Feud: Survey Showdown</title>
     <style>
-        .leaderboard { border-collapse: collapse; width: 100%; max-width: 520px; }
+        .leaderboard { border-collapse: collapse; width: 100%; max-width: 520px; margin: 0 auto; }
         .leaderboard th, .leaderboard td { padding: 0.5rem 0.8rem; border-bottom: 1px solid #ddd; text-align: left; }
         .leaderboard td.num, .leaderboard th.num { text-align: right; }
-        .leaderboard tr.me { background: #fff4d6; font-weight: bold; }
+        .leaderboard tr.me { background: #ffd24a; color: #050a7a; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -75,6 +75,7 @@ foreach ($best as $i => $row) {
     <?php endif; ?>
     <a href="game.php">game</a>
     <a href="leaderboard.php">leaderboard</a>
+    <a href="team.html">team</a>
     <?php if ($currentUser !== null): ?>
         <a href="logout.php">logout</a>
     <?php endif; ?>

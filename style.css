@@ -6,7 +6,6 @@
     --black: #000;
 }
 
-/* Page */
 body {
     margin: 0;
     min-height: 100vh;
@@ -16,7 +15,6 @@ body {
     background: #0a0a3c url("assets/background.webp") center / cover fixed;
 }
 
-/* Navigation */
 nav {
     padding: 12px;
     background: var(--dark-blue);
@@ -39,7 +37,6 @@ nav a:hover {
     background: #2a3cff;
 }
 
-/* Menu card */
 main {
     width: 90%;
     max-width: 500px;
@@ -65,7 +62,6 @@ h2 {
     text-shadow: 2px 2px 0 var(--black);
 }
 
-/* Play button */
 button {
     padding: 10px 50px;
     font-family: Impact, sans-serif;
@@ -87,7 +83,6 @@ button:active {
     box-shadow: 0 1px 0 var(--black);
 }
 
-/* Game page */
 h3 {
     margin: 0 0 15px;
     text-transform: uppercase;
@@ -95,7 +90,6 @@ h3 {
     text-shadow: 2px 2px 0 var(--black);
 }
 
-/* Answer board */
 .board div {
     margin: 8px 0;
     padding: 12px;
@@ -105,7 +99,6 @@ h3 {
     color: white;
     text-shadow: 2px 2px 0 var(--black);
 
-    /* glossy blue box: light top half, darker bottom half */
     background: linear-gradient(#6aa8ff, #2c6fe6 50%, #1450c8 50%, #2a70ea);
 
     /* black outer edge + silver inner border */
@@ -113,12 +106,10 @@ h3 {
     box-shadow: inset 0 0 0 3px #dfe9ff;
 }
 
-/* Found answers turn gold */
 .board .found {
     color: var(--gold);
 }
 
-/* Strikes */
 .strikes {
     font-family: Impact, sans-serif;
     font-size: 2rem;
@@ -127,7 +118,6 @@ h3 {
     text-shadow: 2px 2px 0 var(--black);
 }
 
-/* Scores */
 .totals {
     display: flex;
     justify-content: space-around;
@@ -178,4 +168,7 @@ button {
 button:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+main a {
+    color: var(--gold);
 }

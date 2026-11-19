@@ -54,6 +54,7 @@ $rank = ($rank === false) ? null : $rank + 1;
     <a href="index.php">home</a>
     <a href="game.php">game</a>
     <a href="leaderboard.php">leaderboard</a>
+    <a href="team.html">team</a>
     <a href="logout.php">logout</a>
 </nav>
 

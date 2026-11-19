@@ -15,6 +15,7 @@ $user = $_SESSION['user'] ?? null;
             <a href="register.php">register</a>
             <a href="game.php">game</a>
             <a href="leaderboard.php">leaderboard</a>
+            <a href="team.html">team</a>
             <?php if ($user !== null): ?>
                 <a href="logout.php">logout</a>
             <?php endif; ?>
