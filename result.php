@@ -3,7 +3,7 @@
  * result.php - results screen after a game ends
  *
  * - game.php saves the finished game in $_SESSION['last_result'] and sends the player here
- * - shows the question, the answers, the score, and where they rank on the leaderboard
+ * - shows every round (question, answers, score, strikes), the totals, and leaderboard rank
  */
 
 session_start();
@@ -13,14 +13,22 @@ if (empty($_SESSION['logged_in'])) {
     exit;
 }
 
-if (empty($_SESSION['last_result'])) {
+if (empty($_SESSION['last_result']['rounds'])) {
     header('Location: game.php');
     exit;
 }
 
 $result = $_SESSION['last_result'];
-$user   = $_SESSION['user'];
-$won    = !empty($result['won']);
+$user   = $_SESSION['user'] ?? 'guest';
+$rounds = $result['rounds'];
+
+$won = true;
+foreach ($rounds as $round) {
+    if (empty($round['cleared'])) {
+        $won = false;
+        break;
+    }
+}
 
 $best = [];
 foreach ($_SESSION['scores'] ?? [] as $entry) {
@@ -45,7 +53,9 @@ $rank = ($rank === false) ? null : $rank + 1;
         .stats { display: flex; gap: 1.5rem; flex-wrap: wrap; margin: 1rem 0; }
         .stat { border: 1px solid #ccc; border-radius: 8px; padding: 0.8rem 1.2rem; text-align: center; min-width: 110px; }
         .stat strong { display: block; font-size: 1.6rem; }
-        .actions { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+        .round { margin-top: 1.5rem; }
+        .round-meta { color: #555; margin: 0.2rem 0 0.8rem; }
+        .actions { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.5rem; }
     </style>
 </head>
 <body>
@@ -59,32 +69,41 @@ $rank = ($rank === false) ? null : $rank + 1;
 
 <main>
     <?php if ($won): ?>
-        <h1>Survey says... you got them all! 🎉</h1>
-        <p>Nice work, <?= htmlspecialchars($user) ?>. You found every answer on the board.</p>
+        <h1>Survey says... you cleared every round! 🎉</h1>
+        <p>Nice work, <?= htmlspecialchars($user) ?>. You found every answer on every board.</p>
     <?php else: ?>
         <h1>Game over!</h1>
-        <p>Good try, <?= htmlspecialchars($user) ?>. Here's what was on the board.</p>
+        <p>Good try, <?= htmlspecialchars($user) ?>. Here's how each round went.</p>
     <?php endif; ?>
 
     <div class="stats">
-        <div class="stat"><strong><?= (int) $result['round_score'] ?></strong> this round</div>
+        <div class="stat"><strong><?= (int) $result['game_total'] ?></strong> this game</div>
         <div class="stat"><strong><?= (int) $result['total_points'] ?></strong> total points</div>
         <?php if ($rank !== null): ?>
             <div class="stat"><strong>#<?= $rank ?></strong> on the leaderboard</div>
         <?php endif; ?>
     </div>
 
-    <h2><?= htmlspecialchars($result['question']) ?></h2>
+    <?php foreach ($rounds as $round): ?>
+        <section class="round">
+            <h2>Round <?= (int) $round['round'] ?>: <?= htmlspecialchars($round['question']) ?></h2>
+            <p class="round-meta">
+                <?= (int) $round['score'] ?> points &middot;
+                <?= (int) $round['strikes'] ?> strike<?= (int) $round['strikes'] === 1 ? '' : 's' ?> &middot;
+                <?= !empty($round['cleared']) ? 'board cleared' : 'out of strikes' ?>
+            </p>
 
-    <ol class="board">
-        <?php foreach ($result['answers'] as $answer => $points): ?>
-            <?php $found = in_array($answer, $result['found'], true); ?>
-            <li class="<?= $found ? 'found' : 'missed' ?>">
-                <span><?= htmlspecialchars(ucfirst($answer)) ?><?= $found ? '' : ' (missed)' ?></span>
-                <span><?= (int) $points ?></span>
-            </li>
-        <?php endforeach; ?>
-    </ol>
+            <ol class="board">
+                <?php foreach ($round['answers'] as $answer => $points): ?>
+                    <?php $found = in_array((string) $answer, $round['found'], true); ?>
+                    <li class="<?= $found ? 'found' : 'missed' ?>">
+                        <span><?= htmlspecialchars(ucfirst((string) $answer)) ?><?= $found ? '' : ' (missed)' ?></span>
+                        <span><?= (int) $points ?></span>
+                    </li>
+                <?php endforeach; ?>
+            </ol>
+        </section>
+    <?php endforeach; ?>
 
     <div class="actions">
         <form method="POST" action="game.php">
