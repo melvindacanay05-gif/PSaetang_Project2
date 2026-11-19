@@ -1,0 +1,58 @@
+Sprint: 11/8 to 11/18
+ 
+ 
+===========SPRINT LOG=========
+ 
+Goal: A playable Family Feud web game with accounts, 3 rounds, results, and a leaderboard.
+ 
+Done:
+- Register and login/logout (hashed passwords)
+- Game with 3 rounds, 3 strikes, 1 hint per round
+- Forgiving answer matching (case, plurals, punctuation)
+- Results page and leaderboard
+- Game show styling
+ 
+Problems fixed:
+- Multi-word answers: remove spaces before comparing
+- Refresh resubmitting the form: redirect after each round
+ 
+Not done yet:
+- Leaderboard resets when the session ends
+- Only 6 questions
+ 
+ 
+DEVELOPMENT JOURNAL
+ 
+11/8   Setup, register page (Melvin)
+11/10  Login and logout (Parker)
+11/12  Game loop and scoring (Melvin)
+11/14  Answer matching and hints (Parker)
+11/16  Rounds, results, leaderboard (Melvin and Parker)
+11/18  Styling and testing (Melvin and Parker)
+ 
+Design decisions:
+- Accounts in a text file: no database needed
+- Game state in the session: players can't cheat
+- Hashed passwords: never store plain text
+ 
+How we used AI: [what you asked, what you used, how you checked it]
+ 
+ 
+TIME LOG
+ 
+Melvin: 18 hrs
+Parker: 18 hrs
+Total:  36 hrs
+ 
+ 
+STANDUP AND RETROSPECTIVE
+ 
+Standups (11/8, 11/10, 11/12, 11/14, 11/16, 11/18):
+- Each day we shared what we finished, what was next, and any blockers.
+- Decisions: 5 answers per question, 3 strikes, 3 rounds; session scores for the leaderboard.
+ 
+Retrospective (11/18):
+- Went well: finished everything, split work by page
+- Didn't go well: leaderboard resets, few questions, late testing
+- Next time: save the leaderboard, add more questions, test earlier
+ 
