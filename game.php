@@ -38,6 +38,41 @@ function addToTotalScore(string $username, int $points): int
     return $total;
 }
 
+function normalizeAnswer(string $text): string
+{
+    $text = strtolower($text);
+    $text = preg_replace('/[^a-z0-9 ]+/', ' ', $text);   // hyphens, apostrophes, etc become spaces
+    $text = trim(preg_replace('/\s+/', ' ', $text));
+    $text = preg_replace('/^(a|an|the|some) /', '', $text); // drop a leading article
+    return str_replace(' ', '', $text);
+}
+
+function matchAnswer(string $guess, array $answers): ?string
+{
+    $guess = normalizeAnswer($guess);
+    if ($guess === '') {
+        return null;
+    }
+
+    $tries = [$guess];
+    if (strlen($guess) > 4 && substr($guess, -3) === 'ies') {
+        $tries[] = substr($guess, 0, -3) . 'y';   // strawberries -> strawberry
+    }
+    if (strlen($guess) > 3 && substr($guess, -2) === 'es') {
+        $tries[] = substr($guess, 0, -2);
+    }
+    if (strlen($guess) > 2 && substr($guess, -1) === 's') {
+        $tries[] = substr($guess, 0, -1);
+    }
+
+    foreach ($answers as $ans => $points) {
+        if (in_array(normalizeAnswer((string) $ans), $tries, true)) {
+            return (string) $ans;
+        }
+    }
+    return null;
+}
+
 if (count($questions) < $totalRounds) {
     exit('questions.php needs at least ' . $totalRounds . ' questions.');
 }
@@ -52,7 +87,6 @@ if (!isset($_SESSION['placeholders'], $_SESSION['total'], $_SESSION['strikes'], 
     $_SESSION['hints'] = 0;
     $_SESSION['hint_for'] = '';
 
-    // random question selection: a different random question for each round
     $ids = array_rand($questions, $totalRounds);
     shuffle($ids);
     $_SESSION['question_ids'] = $ids;
@@ -99,8 +133,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $feedback = 'That answer is too long (40 characters max).';
         } elseif (!preg_match("/^[a-z0-9 '\-]+$/", $answer)) {
             $feedback = 'Answers can only have letters, numbers, spaces, hyphens, and apostrophes.';
-        } elseif (in_array($answer, $_SESSION['placeholders'], true)) {
-            $feedback = 'That one is already on the board!';
         }
 
         if ($feedback !== '') {
@@ -118,20 +150,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $index = 0;
-    foreach ($current['answers'] as $ans => $points) {
-        $index++;
+    // see which answer on THIS round's board the guess matches (only the current question counts)
+    $matched = ($answer !== '' && $feedback === '') ? matchAnswer($answer, $current['answers']) : null;
 
-        if ($answer === $ans && $_SESSION['placeholders'][$index - 1] === $index) {
-            $_SESSION['placeholders'][$index - 1] = $ans;
-            $_SESSION['total'] += $points;
+    if ($matched !== null) {
+        $index = array_search($matched, array_keys($current['answers']), true);
+
+        if ($_SESSION['placeholders'][$index] === $index + 1) {
+            // new answer: flip it over and add the points
+            $_SESSION['placeholders'][$index] = $matched;
+            $_SESSION['total'] += $current['answers'][$matched];
+        } else {
+            // already found, no points but no strike either
+            $feedback = 'That one is already on the board!';
+            $feedbackType = 'bad';
         }
     }
 
     // score the guess (adds a strike when it is wrong)
     if ($answer !== '' && $feedback === '') {
         if ($_SESSION['total'] > $scoreBefore) {
-            $feedback = 'Survey says... YES! +' . ($_SESSION['total'] - $scoreBefore) . ' points';
+            $feedback = 'Survey says... ' . strtoupper($matched) . '! +' . ($_SESSION['total'] - $scoreBefore) . ' points';
             $feedbackType = 'good';
         } else {
             $_SESSION['strikes']++;
@@ -141,12 +180,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // check for the end of the round AFTER the strike has been counted
     $cleared   = count(array_filter($_SESSION['placeholders'], 'is_int')) === 0;
     $roundOver = $cleared || $_SESSION['strikes'] >= $maxStrikes;
 
     if ($roundOver) {
-        // remember this round for the results page
         $_SESSION['rounds'][] = [
             'round'    => $_SESSION['round'],
             'question' => $current['question'],
@@ -160,7 +197,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['banked'] += $_SESSION['total'];
 
         if ($_SESSION['round'] >= $totalRounds) {
-            // last round: save the game and show results
             $_SESSION['total_points'] = addToTotalScore($_SESSION['user'] ?? 'guest', $_SESSION['banked']);
 
             $_SESSION['scores'][] = [
@@ -184,7 +220,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // otherwise: next round
         $_SESSION['flash'] = [
             'type' => $cleared ? 'good' : 'bad',
             'text' => ($cleared ? 'Board cleared!' : 'Three strikes!') . ' On to round ' . ($_SESSION['round'] + 1) . '.',
@@ -200,7 +235,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// message left over from a round change on the previous request
 if (isset($_SESSION['flash'])) {
     $feedback = $_SESSION['flash']['text'];
     $feedbackType = $_SESSION['flash']['type'];
@@ -210,51 +244,66 @@ if (isset($_SESSION['flash'])) {
 ?>
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <title>Game</title>
-    </head>
-    <body>
-        <nav>
-            <a href="index.php">home</a>
-            <a href="login.php">login</a>
-            <a href="register.php">register</a>
-            <a href="game.php">game</a>
-            <a href="leaderboard.php">leaderboard</a>
-            <a href="logout.php">logout</a>
-        </nav>
+<head>
+    <meta charset="utf-8">
+    <title>Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav>
+        <a href="index.php">home</a>
+        <a href="login.php">login</a>
+        <a href="register.php">register</a>
+        <a href="game.php">game</a>
+        <a href="leaderboard.php">leaderboard</a>
+        <a href="logout.php">logout</a>
+    </nav>
+
+    <main>
         <h3>Round <?= (int) $_SESSION['round'] ?> of <?= $totalRounds ?></h3>
+
         <?php if ($feedback !== ''): ?>
-            <p class="feedback <?= htmlspecialchars($feedbackType) ?>" role="status"></p>
+            <p class="feedback <?= htmlspecialchars($feedbackType) ?>" role="status"><?= htmlspecialchars($feedback) ?></p>
         <?php endif; ?>
+
         <?php if ($_SESSION['hint_for'] !== '' && !in_array($_SESSION['hint_for'], $_SESSION['placeholders'], true)): ?>
             <p>Hint: <?= htmlspecialchars(strtoupper($_SESSION['hint_for'][0]) . preg_replace('/[^ ]/', '_', substr($_SESSION['hint_for'], 1))) ?></p>
         <?php endif; ?>
-        <?php
-            foreach ($_SESSION['placeholders'] as $placeholder){
-                print htmlspecialchars((string) $placeholder) . '<br>';
-            }
 
-            print 'round total: ' . (int) $_SESSION['total'] . '<br>';
-            print 'running total: ' . (int) ($_SESSION['banked'] + $_SESSION['total']) . '<br>';
-        ?>
-        <h2>Strikes: <?= (int) $_SESSION['strikes'] ?> / <?= $maxStrikes ?></h2>
-        <h1><?= htmlspecialchars($current['question']) ?></h1>
+        <h2><?= htmlspecialchars($current['question']) ?></h2>
 
+        <div class="board">
+            <?php foreach ($_SESSION['placeholders'] as $placeholder): ?>
+                <div class="<?= is_int($placeholder) ? 'hidden' : 'found' ?>">
+                    <?= htmlspecialchars((string) $placeholder) ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+        <div class="totals">
+            <p>Round total <b><?= (int) $_SESSION['total'] ?></b></p>
+            <p>Running total <b><?= (int) ($_SESSION['banked'] + $_SESSION['total']) ?></b></p>
+        </div>
+
+        <p class="strikes">Strikes: <?= (int) $_SESSION['strikes'] ?> / <?= $maxStrikes ?></p>
 
         <form method="POST" action="game.php">
             <input type="text" name="answer" required maxlength="40" autocomplete="off" autofocus>
             <button type="submit">submit</button>
         </form>
-        <form action="game.php" method="POST">
-            <input type="hidden" name="action" value="reset">
-            <button type="submit">reset</button>
-        </form>
-                <form action="game.php" method="POST">
+
+        <form method="POST" action="game.php">
             <input type="hidden" name="action" value="hint">
             <button type="submit" <?= $_SESSION['hints'] >= $maxHints ? 'disabled' : '' ?>>
                 hint (<?= $maxHints - $_SESSION['hints'] ?> left)
             </button>
         </form>
-    </body>
+
+        <form method="POST" action="game.php">
+            <input type="hidden" name="action" value="reset">
+            <button type="submit">reset</button>
+        </form>
+    </main>
+</body>
 </html>

@@ -6,6 +6,7 @@ $user = $_SESSION['user'] ?? null;
 
 <html>
     <head>
+        <link rel="stylesheet" href="style.css">
 
     <body>
         <nav>

@@ -22,7 +22,6 @@ $result = $_SESSION['last_result'];
 $user   = $_SESSION['user'] ?? 'guest';
 $rounds = $result['rounds'];
 
-// "won" = the player cleared the board in every round
 $won = true;
 foreach ($rounds as $round) {
     if (empty($round['cleared'])) {
