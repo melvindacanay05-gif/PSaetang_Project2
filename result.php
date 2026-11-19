@@ -8,11 +8,13 @@
 
 session_start();
 
+// only logged in players can see results
 if (empty($_SESSION['logged_in'])) {
     header('Location: login.php');
     exit;
 }
 
+// nothing to show until a game is finished
 if (empty($_SESSION['last_result']['rounds'])) {
     header('Location: game.php');
     exit;
@@ -23,6 +25,7 @@ $user   = $_SESSION['user'] ?? 'guest';
 $rounds = $result['rounds'];
 
 $won = true;
+// the game counts as won only if every board was cleared
 foreach ($rounds as $round) {
     if (empty($round['cleared'])) {
         $won = false;
@@ -31,6 +34,7 @@ foreach ($rounds as $round) {
 }
 
 $best = [];
+// work out the player's leaderboard rank
 foreach ($_SESSION['scores'] ?? [] as $entry) {
     $key = strtolower($entry['user']);
     $best[$key] = max($best[$key] ?? 0, (int) $entry['score']);
@@ -50,6 +54,7 @@ $rank = ($rank === false) ? null : $rank + 1;
 </head>
 <body>
 
+<?php // links to every page ?>
 <nav>
     <a href="index.php">home</a>
     <a href="game.php">game</a>
@@ -75,6 +80,7 @@ $rank = ($rank === false) ? null : $rank + 1;
         <?php endif; ?>
     </div>
 
+    <?php // one summary card per round ?>
     <?php foreach ($rounds as $round): ?>
         <section class="round">
             <h2>Round <?= (int) $round['round'] ?>: <?= htmlspecialchars($round['question']) ?></h2>
@@ -97,6 +103,7 @@ $rank = ($rank === false) ? null : $rank + 1;
     <?php endforeach; ?>
 
     <div class="actions">
+        <?php // buttons for what to do next ?>
         <form method="POST" action="game.php">
             <input type="hidden" name="action" value="reset">
             <button type="submit">Play again</button>

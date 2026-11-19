@@ -10,6 +10,7 @@
 
 session_start();
 
+// already logged in? no need to sign up
 if (!empty($_SESSION['logged_in'])) {
     header('Location: game.php');
     exit;
@@ -21,6 +22,7 @@ $errors   = [];
 $success  = false;  
 $username = '';
 
+// read and check the sign up form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $username        = trim((string) filter_input(INPUT_POST, 'username', FILTER_UNSAFE_RAW));
@@ -47,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Passwords do not match.';
     }
 
+    // save the account if everything checks out
     if (empty($errors)) {
         $handle = @fopen(ACCOUNTS_FILE, 'c+');
         if ($handle === false) {
@@ -55,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flock($handle, LOCK_EX);
 
             $taken = false;
+            // make sure the username isn't taken
             while (($line = fgets($handle)) !== false) {
                 $account = json_decode($line, true);
                 if (is_array($account)
@@ -135,6 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="register-layout">
 
+        <?php // sign up form ?>
         <form class="auth-form" method="POST" action="register.php" novalidate>
 
             <label for="username">Username</label>
@@ -175,6 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit">Register</button>
         </form>
 
+        <?php // requirements list that checks off as you type ?>
         <aside class="requirements" aria-label="account requirements">
             <h3>What you need</h3>
 
@@ -208,6 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.getElementById(id).classList.toggle('met', ok);
     }
 
+    // tick off each rule as the player types; php still does the real check
     function checkRules() {
         if (!userBox) return;
         const u = userBox.value.trim();

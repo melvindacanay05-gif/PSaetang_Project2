@@ -5,6 +5,7 @@
 
 session_start();
 
+// clear the session data and delete the session cookie
 $_SESSION = [];
 
 if (ini_get('session.use_cookies')) {
@@ -13,6 +14,7 @@ if (ini_get('session.use_cookies')) {
         $params['path'], $params['domain'], $params['secure'], $params['httponly']);
 }
 
+// end the session and go back to the login page
 session_destroy();
 
 header('Location: login.php?logged_out=1');

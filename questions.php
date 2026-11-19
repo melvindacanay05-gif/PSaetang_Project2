@@ -1,4 +1,11 @@
 <?php
+/*
+ * questions.php - survey questions for family feud
+ *
+ * - each question has 5 answers with point values
+ * - game.php picks 3 of them at random each game
+ */
+
 return [
     ['question' => 'Name something people bring to the beach',
      'answers'  => ['towel' => 30, 'sunscreen' => 25, 'umbrella' => 20, 'food' => 15, 'chair' => 10]],

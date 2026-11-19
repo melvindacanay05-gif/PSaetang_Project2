@@ -12,9 +12,11 @@ session_start();
 
 const TOP_N = 10;
 
+// every score saved this session
 $scores = $_SESSION['scores'] ?? [];
 
 $best = [];
+// keep only each player's best score
 foreach ($scores as $entry) {
     if (!is_array($entry) || !isset($entry['user'], $entry['score'])) {
         continue; 
@@ -33,6 +35,7 @@ foreach ($scores as $entry) {
     $best[$key]['games']++; 
 }
 
+// sort highest first; ties go to whoever scored first
 usort($best, function ($a, $b) {
     if ($a['score'] !== $b['score']) {
         return $b['score'] <=> $a['score'];
@@ -40,10 +43,12 @@ usort($best, function ($a, $b) {
     return $a['time'] <=> $b['time'];
 });
 
+// take the top 10 and find the logged in player
 $top         = array_slice($best, 0, TOP_N);
 $currentUser = $_SESSION['user'] ?? null;
 
 $myRank = null;
+// find the logged in player's rank, even outside the top 10
 foreach ($best as $i => $row) {
     if ($currentUser !== null && strcasecmp($row['user'], $currentUser) === 0) {
         $myRank = ['rank' => $i + 1] + $row;
@@ -67,6 +72,7 @@ foreach ($best as $i => $row) {
 </head>
 <body>
 
+<?php // links to every page ?>
 <nav>
     <a href="index.php">home</a>
     <?php if ($currentUser === null): ?>
@@ -91,6 +97,7 @@ foreach ($best as $i => $row) {
 
     <?php else: ?>
 
+        <?php // leaderboard table; the player's own row is highlighted ?>
         <table class="leaderboard">
             <thead>
                 <tr>

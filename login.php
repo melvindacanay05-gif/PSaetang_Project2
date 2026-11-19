@@ -9,6 +9,7 @@
 
 session_start();
 
+// already logged in? skip the form
 if (!empty($_SESSION['logged_in'])) {
     header('Location: index.php');
     exit;
@@ -19,6 +20,7 @@ const ACCOUNTS_FILE = __DIR__ . '/data/accounts.txt';
 $error    = '';
 $notice   = isset($_GET['logged_out']) ? "You've been logged out. See you next time!" : '';
 $username = '';
+// handle the login form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $username = trim((string) filter_input(INPUT_POST, 'username', FILTER_UNSAFE_RAW));
@@ -30,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $found = null;
         $lines = is_readable(ACCOUNTS_FILE) ? file(ACCOUNTS_FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
 
+        // find the account with this username
         foreach ($lines as $line) {
             $account = json_decode($line, true);
             if (is_array($account)
@@ -40,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // check the password, then start a fresh session
         if ($found === null || !password_verify($password, $found['password'])) {
             $error = 'Wrong username or password.';
         } else {
@@ -69,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 
+<?php // links to every page ?>
 <nav>
     <a href="index.php">home</a>
     <a href="login.php">login</a>
@@ -89,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p class="message error" role="alert"><?= htmlspecialchars($error) ?></p>
     <?php endif; ?>
 
+    <?php // login form; the username stays filled in after an error ?>
     <form class="auth-form" method="POST" action="login.php">
         <label for="username">Username</label>
         <input
